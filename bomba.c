@@ -45,6 +45,7 @@ int main(int argc, char **argv) {
 	int espera = MAX_INT;	/*Tiempo de espera minimo*/
 	pthread_t mensajero; 	/*Hilo que hace peticiones de gasolina*/
 	
+	//llamada(...);
 
 	/*Inicializa el semaforo en 1*/
 	sem_init(&sem, 0, 1);
