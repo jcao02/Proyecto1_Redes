@@ -3,7 +3,6 @@
 #include "errores.h"
 #include "extra.h"
 #define LIMITE 480
-#define MAX_INT 2147483648
 
 int gas = 0;			/*Cantidad de gasolina actual*/
 int max = 0;			/*Capacidad maxima de la bomba*/

@@ -25,6 +25,6 @@ errores.o: errores.c errores.h
 	gcc -c -g -pedantic errores.c
 
 clean:
-	clear
 	rm *.o bomba centro || true
 	echo ""
+	clear
