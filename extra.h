@@ -1,0 +1,2 @@
+#define MINUTO 100000
+#define CARGA 38000

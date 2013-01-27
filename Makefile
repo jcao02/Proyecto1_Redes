@@ -1,18 +1,22 @@
 all: bomba centro
 
 #bomba (cliente)
-bomba: bomba.o errores.o
-	gcc -pedantic -pthread bomba.o errores.o -o bomba
+bomba: bomba.o errores.o extra.o
+	gcc -pedantic -pthread bomba.o errores.o extra.o -o bomba
 
-bomba.o: bomba.c errores.h
+bomba.o: bomba.c errores.h extra.h
 	gcc -c -g -pedantic -pthread bomba.c
 
 #centro (servidor)
-centro: centro.o errores.o
-	gcc -pedantic -pthread centro.o errores.o -o centro
+centro: centro.o errores.o extra.o
+	gcc -pedantic -pthread centro.o errores.o extra.o -o centro
 
-centro.o: centro.c errores.h
+centro.o: centro.c errores.h extra.h
 	gcc -c -g -pedantic -pthread centro.c
+
+#procedimientos extra
+extra.o: extra.c extra.h
+	gcc -c -g -pedantic extra.c
 
 #manejo de errores
 errores.o: errores.c errores.h
