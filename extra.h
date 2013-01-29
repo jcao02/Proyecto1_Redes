@@ -2,10 +2,15 @@
 #define MINUTO 100000
 #define CARGA 38000
 
-struct distr
-{
+struct distr {
 	char *nombre;
 	char *DNS;
 	int puerto;
-	int respuesta;
+	int pr;
 };
+
+typedef struct distr *distr;
+
+distr create_distr(char *nombre, char *DNS, int puerto, int pr);
+
+int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *inv, int *con);

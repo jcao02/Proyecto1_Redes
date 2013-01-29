@@ -1,21 +1,50 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include "extra.h"
 #define DEFAULT_CHAR "\033[0m"
 #define UNDER_CHAR "\033[4m"
 #define BOLD_CHAR "\033[1m"
 
+/*
+ *
+ */
+distr create_distr(char *nombre, char *DNS, int puerto, int pr) {
+	distr d;
+
+	/*Pide memoria para la estrucura de distribuidor*/
+	if ((d = (distr) malloc(sizeof(struct distr))) == NULL) {
+		errorMem();
+		return NULL;
+	}
+
+	/*Asigna valores respectivos a la estructura*/
+	d->nombre = nombre;
+	d->DNS = DNS;
+	d->puerto = puerto;
+	d->pr = pr;
+}
+
+/*
+ *
+ */
 void imprimirHB() {
-	printf("AYUDA");
+	printf(UNDER_CHAR BOLD_CHAR"\nAYUDA\n\n"DEFAULT_CHAR);
 }
 
+/*
+ *
+ */
 void imprimirEB() {
-	printf("uso: "BOLD_CHAR"bomba –n nombreBomba –cp capacidadMaxima ");
-	printf("–i inventario –c consumo –fc FicheroCentros\n"DEFAULT_CHAR);
-	printf("o: "BOLD_CHAR"bomba -h"DEFAULT_CHAR" para mas informacion\n");
+	printf("uso: "BOLD_CHAR"bomba ["DEFAULT_CHAR" -h "BOLD_CHAR"|"DEFAULT_CHAR);
+	printf(" –n nombreBomba –cp capacidadMaxima –i inventario –c consumo");
+	printf(" –fc FicheroCentros "BOLD_CHAR"]\n"DEFAULT_CHAR);
 }
 
-int llamadaB (int argc, char **argv, char **nombre, char **fich, int *cap, int *inv, int *con) {
+/*
+ *
+ */
+int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *inv, int *con) {
 
 	int i, flags;
 
@@ -25,7 +54,7 @@ int llamadaB (int argc, char **argv, char **nombre, char **fich, int *cap, int *
 			imprimirEB();
 			return -1;
 		case 2:			/*-h*/
-			if (strcmp(argv[2], "-h") == 0) {
+			if (strcmp(argv[1], "-h") == 0) {
 				imprimirHB();
 			} else {
 				imprimirEB();
@@ -51,7 +80,7 @@ int llamadaB (int argc, char **argv, char **nombre, char **fich, int *cap, int *
 
 				/*Si consigue -cp*/
 				} else if (strcmp(argv[i], "-cp") == 0) {
-					*cap = atoi(argv[i+1]);
+					*max = atoi(argv[i+1]);
 
 				/*Si consigue -i*/
 				} else if (strcmp(argv[i], "-i") == 0) {
@@ -83,6 +112,9 @@ int llamadaB (int argc, char **argv, char **nombre, char **fich, int *cap, int *
 	return 0;
 }
 
+/*
+ *
+ */
 int llamadaC (int argc, char **argv) {
 
 
