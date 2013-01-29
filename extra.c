@@ -44,6 +44,22 @@ void imprimirEB() {
 /*
  *
  */
+void imprimirHC() {
+	printf(UNDER_CHAR BOLD_CHAR"\nAYUDA\n\n"DEFAULT_CHAR);
+}
+
+/*
+ *
+ */
+void imprimirEC() {
+	printf("uso: "BOLD_CHAR"centro ["DEFAULT_CHAR" -h "BOLD_CHAR"|"DEFAULT_CHAR);
+	printf(" –n nombreCentro –cp capacidadMaxima –i inventario –t tiempo");
+	printf(" –s suministro -p puerto "BOLD_CHAR"]\n"DEFAULT_CHAR);
+}
+
+/*
+ *
+ */
 int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *inv, int *con) {
 
 	int i, flags;
@@ -113,9 +129,77 @@ int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *
 }
 
 /*
- *
+ * 
  */
-int llamadaC (int argc, char **argv) {
+int llamadaC (int argc, char **argv, char **nombre, int *max, int *inv, int *tiempo, int *sum, int *puerto ) {
+    int i, flags;
+
+    switch (argc) {
+
+        case 1:			/*sin flags*/
+            imprimirEC();
+            return -1;
+        case 2:			/*-h*/
+            if (strcmp(argv[1], "-h") == 0) {
+                imprimirHC();
+            } else {
+                imprimirEC();
+            }
+            return -1;
+        default:		/*flags*/
+            /*si no tiene el numero de flags adecuado*/
+            if (argc != 13) {
+                imprimirEC();
+                return -1;
+            }
+
+            for (i = 1; i < argc; ++i) {
+
+                /*Si ya reviso esta posicion*/
+                if (argv[i] == NULL) {
+                    continue;
+                }
+
+                /*Si consigue -n*/
+                if (strcmp(argv[i], "-n") == 0) {
+                    *nombre = argv[i+1];
+
+                    /*Si consigue -cp*/
+                } else if (strcmp(argv[i], "-cp") == 0) {
+                    *max = atoi(argv[i+1]);
+
+                    /*Si consigue -i*/
+                } else if (strcmp(argv[i], "-i") == 0) {
+                    *inv = atoi(argv[i+1]);
+
+                    /*Si consigue -t*/
+                } else if (strcmp(argv[i], "-t") == 0) {
+                    *tiempo = atoi(argv[i+1]);
+
+                    /*Si consigue -c*/
+                } else if (strcmp(argv[i], "-s") == 0) {
+                    *sum = atoi(argv[i+1]);
+
+                    /*Si consigue -fc*/
+                } else if (strcmp(argv[i], "-p") == 0) {
+                    *puerto = atoi(argv[i+1]);
+
+                    /*Si no es un flag valido*/
+                } else {
+
+                    imprimirEC();
+                    return -1;
+                }
+
+                /*Indico que ya conoce los valores de estas*/
+                argv[i] = argv[i+1] = NULL;
+            }
+
+
+
+    }
+
+    return 0;
 
 
 }

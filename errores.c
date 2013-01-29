@@ -8,7 +8,7 @@ int errorMem() {
 
 int errorHilo() {
 
-    printf("\nError en creacion de hilo.\n");
+    printf("\nError en hilo.\n");
     return -2;
 }
 
@@ -16,4 +16,10 @@ int errorFichero() {
 
 	printf("\nError en fichero.\n");
 	return -3;
+}
+
+int errorSocket() {
+
+    printf("\nError en socket.\n");
+    return -4;
 }
