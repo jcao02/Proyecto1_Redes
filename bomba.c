@@ -20,6 +20,7 @@ int analizarFichero(char *fich) {
 	distr cent;				/*Variable que representa un centro*/
 	char *nom, *DNS;		/*Nombre y DNS de centro de distribucion*/
 	int puerto, respuesta;	/*Puerto y tiempo de respuesta de centro de distribucion*/
+	int min_resp = MAX_INT;	/*Tiempo de respuesta minimo de los centros de distribucion*/
 
 	/*Abre el archivo*/
 	if ((fd = fopen(fich, "r")) == NULL) {
@@ -32,17 +33,25 @@ int analizarFichero(char *fich) {
 		nombre = strtok(buffer, "&");
 		DNS = strtok(NULL, "&");
 		puerto = atoi(strtok(NULL, "&"));
-		respuesta = 0;
+		respuesta = 1;
 		//respuesta ===== CONEXION A EL SERVIDOR PARA PEDIR TIEMPO DE RESPUESTA
 
+		/*Si consegui un nuevo minimo tiempo de respuesta*/
+		if (respuesta < min_resp) {
+			min_resp = respuesta;
+		}
 
 		printf("'%s', '%s', '%d', '%d'\n",nombre, DNS, puerto, respuesta);
-		cent = create_distr(nombre, DNS, puerto, respuesta);
+		if((cent = create_distr(nombre, DNS, puerto, respuesta)) == NULL) {
+			return -1;
+		}
 
-		add(&centros, cent);
+		if (!add(&centros, cent)) {
+			return -1;
+		}
 	}
 
-	return 0;
+	return min_resp;
 }
 
 void *pedirGas() {
@@ -53,7 +62,8 @@ void *pedirGas() {
 
 	printf("HILO\n");
 
-	//EN EL for QUITAR EL '0'... ESTA PORQUE NO HEMOS HECHO LO DE REDES
+	//EN EL for QUITAR EL '0' DE LA CONDICION, DEBE SER: ''  (si vacio, es TRUE en un for)
+	//ESTA PORQUE NO HEMOS HECHO LO DE REDES
 	/*Itera sobre todos los centros hasta conseguir uno disponible*/
 	for (cent = next_it(it = create_iterator(centros)); 0; cent = next_it(it)) {
 
@@ -97,18 +107,16 @@ int main(int argc, char **argv) {
 		return -1;
 	}
 
-	printf("nombre: '%s'\n fichero: '%s'\n Capacidad: '%d'\n",nombre, fich, max);
+	printf("nombre: '%s'\n fichero: '%s'\n capacidad: '%d'\n",nombre, fich, max);
 	printf("inicial: '%d'\n consumo: '%d'\n", gas, salida);
 
 	/*Revisa el fichero de centros, si hay error termina el programa.*/
-	if (analizarFichero(fich) < 0) {
+	if ((espera = analizarFichero(fich)) < 0) {
 		return -3;
 	}
 
 	/*Inicializa el semaforo en 1*/
 	sem_init(&sem, 0, 1);
-
-	espera = 1;	//PARTE DE REDES
 
 	/*mientras no pasen las 8 horas*/
 	while (tiempo < LIMITE) {
