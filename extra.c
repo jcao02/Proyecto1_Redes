@@ -42,7 +42,11 @@ void imprimirEB() {
 }
 
 /*
- *
+ * 'nombre': nombre de la bomba
+ * 'fich': fichero de centros de distribucion
+ * 'max': capacidad maxima de la bomba
+ * 'inv': inventario inicial de la bomba
+ * 'con': consumo de gasolina por minuto en la bomba
  */
 int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *inv, int *con) {
 
@@ -104,9 +108,6 @@ int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *
 				/*Indico que ya conoce los valores de estas*/
 				argv[i] = argv[i+1] = NULL;
 			}
-
-
-
 	}
 
 	return 0;

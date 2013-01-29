@@ -92,15 +92,18 @@ void *pedirGas() {
 	/*Signal para liberar 'gas' y 'pet'*/
 	sem_post(&sem);
 
+	pthread_exit(NULL);
 }
 
 int main(int argc, char **argv) {
 
-	char *fich;				/*Nombre del fichero con lista de centros*/
-	int tiempo = 0;			/*Tiempo transcurrido*/
-	int salida = 0;			/*Consumo en litros por minuto de gasolina*/
-	int espera = MAX_INT;	/*Tiempo de espera minimo*/
-	pthread_t mensajero; 	/*Hilo que hace peticiones de gasolina*/
+	char *fich;					/*Nombre del fichero con lista de centros*/
+	int tiempo = 0;				/*Tiempo transcurrido*/
+	int salida = 0;				/*Consumo en litros por minuto de gasolina*/
+	int espera = MAX_INT;		/*Tiempo de espera minimo*/
+	pthread_t mensajero; 		/*Hilo que hace peticiones de gasolina*/
+	int fd;						/*File descriptor del socket*/
+	struct sockaddr_in Cdir;	/**/
 	
 	/*Si hubo error en la invocacion del porgrama*/
 	if (llamadaB(argc, argv, &nombre, &fich, &max, &gas, &salida) < 0) {
