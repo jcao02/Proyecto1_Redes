@@ -3,4 +3,6 @@ int errorMem();
 
 int errorHilos();
 
-int errorFichero();
+int errorSocket();
+
+int errorFile();

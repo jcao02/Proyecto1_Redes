@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <semaphore.h>
 #include <pthread.h>
 #include <sys/socket.h>
@@ -49,29 +50,84 @@ void *controlGas(){
     pthread_exit(NULL);
 }
 
-void *enviarGas(){
+void *manejo_peticion(void *fd){
+
+    int newfd = (int) fd;
+    char pet;
+    char *res;
+
+    if (read(newfd, &pet, 1) != 1) {
+        
+        errorFile();
+        pthread_exit(NULL);
+    }
+
+    printf("\n\n-------------------------------------- '%c'\n\n", pet);
+
+    /*Si es una peticion de tiempo de respuesta*/
+    if (pet == 't' || pet == 'T') {
+
+        /*Memoria para el string de respuesta*/
+        if ((res = (char *) calloc(4, sizeof(char))) == NULL) {
+
+            errorMem();
+            pthread_exit(NULL);
+        }
+
+        sprintf(res, "%d", tiempo);
+
+        /*Escribe el tiempo de respuesta al cliente*/
+        if (write(newfd, res, 4) < 1) {
+
+            free(res);
+            errorFile();
+            pthread_exit(NULL);
+        }
+
+        pthread_exit(NULL);
+    }
+
+    if (pet != 'g' && pet != 'G') {
+
+        pthread_exit(NULL);
+    }
 
     /*wait para accesar a 'gas'*/
     sem_wait(&sem);
 
+    /*Si tengo suficiente gasolina*/
     if (gas >= CARGA){
 
-        // Aqui se le dice que Si al cliente
+        pet = '1';
+
+        /*Escribe que SI enviara la gasolina al cliente*/
+        if (write(newfd, &pet, 1) != 1) {
+
+            errorFile();
+            pthread_exit(NULL);
+        }
+
         gas -= CARGA;
         printf("HILO\n");
 
         // Escribir en el log
+    /*Si no hay suficiente gasolina*/
     } else { 
 
-        // Aqui se le dice que No al cliente
+        pet = '0';
+
+        /*Escribe que NO enviara la gasolina al cliente*/
+        if (write(newfd, &pet, 1) != 1) {
+
+            errorFile();
+            pthread_exit(NULL);
+        }
 
         // Escribir en el log
     }
 
     sem_post(&sem);
-    
 
-    /*Conexion con el cliente*/
     pthread_exit(NULL);
 }
 
@@ -128,17 +184,19 @@ int main(int argc, char **argv) {
 
     /*Ciclo para recibir conexiones*/
     while (1){
+
         Btam = sizeof(Bdir);
         /*Se aceptan conexiones con el cliente*/
+
+        printf("----------------------\n");
 
         if ((newfd = accept(fd, (struct sockaddr *) &Bdir, &Btam)) < 0){
 
             return errorSocket(); 
         }
 
-        printf("----------------------\n");
         /*peticion */
-        if (pthread_create(&mensajero, NULL, enviarGas, NULL) != 0){
+        if (pthread_create(&mensajero, NULL, manejo_peticion, (void *) newfd) != 0){
 
             return errorHilo();
         }

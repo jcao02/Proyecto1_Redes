@@ -12,14 +12,14 @@ int errorHilo() {
     return -2;
 }
 
-int errorFichero() {
-
-	printf("\nError en fichero.\n");
-	return -3;
-}
-
 int errorSocket() {
 
     printf("\nError en socket.\n");
     return -4;
+}
+
+int errorFile() {
+
+	printf("\nError en escritura/lectura de archivos.\n");
+	return -5;
 }

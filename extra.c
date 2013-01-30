@@ -11,6 +11,8 @@
  */
 distr create_distr(char *nombre, char *DNS, int puerto, int pr) {
 	distr d;
+	char* temp;
+	int size;
 
 	/*Pide memoria para la estrucura de distribuidor*/
 	if ((d = (distr) malloc(sizeof(struct distr))) == NULL) {
@@ -18,9 +20,21 @@ distr create_distr(char *nombre, char *DNS, int puerto, int pr) {
 		return NULL;
 	}
 
-	/*Asigna valores respectivos a la estructura*/
-	d->nombre = nombre;
-	d->DNS = DNS;
+	/*Copiamos los atributos para evitar errores de apuntadores*/
+	size = strlen(nombre);
+	if ((temp = (char *) malloc((size + 1) * sizeof(char))) == NULL) {
+		errorMem();
+	}
+	strcpy(temp, nombre);
+	d->nombre = temp;
+
+	size = strlen(DNS);
+	if ((temp = (char *) malloc((size + 1) * sizeof(char))) == NULL) {
+		errorMem();
+	}
+	strcpy(temp, DNS);
+	d->DNS = temp;
+
 	d->puerto = puerto;
 	d->pr = pr;
 }
@@ -42,11 +56,7 @@ void imprimirEB() {
 }
 
 /*
- * 'nombre': nombre de la bomba
- * 'fich': fichero de centros de distribucion
- * 'max': capacidad maxima de la bomba
- * 'inv': inventario inicial de la bomba
- * 'con': consumo de gasolina por minuto en la bomba
+ * 
  */
 void imprimirHC() {
 	printf(UNDER_CHAR BOLD_CHAR"\nAYUDA\n\n"DEFAULT_CHAR);
@@ -62,7 +72,11 @@ void imprimirEC() {
 }
 
 /*
- *
+ * 'nombre': nombre de la bomba
+ * 'fich': fichero de centros de distribucion
+ * 'max': capacidad maxima de la bomba
+ * 'inv': inventario inicial de la bomba
+ * 'con': consumo de gasolina por minuto en la bomba
  */
 int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *inv, int *con) {
 
@@ -73,7 +87,7 @@ int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *
 		case 1:			/*sin flags*/
 			imprimirEB();
 			return -1;
-		case 2:			/*-h*/
+		case 2:			/*-h ayuda*/
 			if (strcmp(argv[1], "-h") == 0) {
 				imprimirHB();
 			} else {
@@ -94,23 +108,23 @@ int llamadaB (int argc, char **argv, char **nombre, char **fich, int *max, int *
 					continue;
 				}
 				
-				/*Si consigue -n*/
+				/*Si consigue -n nombre*/
 				if (strcmp(argv[i], "-n") == 0) {
 					*nombre = argv[i+1];
 
-				/*Si consigue -cp*/
+				/*Si consigue -cp capacidad maxima*/
 				} else if (strcmp(argv[i], "-cp") == 0) {
 					*max = atoi(argv[i+1]);
 
-				/*Si consigue -i*/
+				/*Si consigue -i inventario*/
 				} else if (strcmp(argv[i], "-i") == 0) {
 					*inv = atoi(argv[i+1]);
 
-				/*Si consigue -c*/
+				/*Si consigue -c consumo de gasolina*/
 				} else if (strcmp(argv[i], "-c") == 0) {
 					*con = atoi(argv[i+1]);
 
-				/*Si consigue -fc*/
+				/*Si consigue -fc fichero de centros*/
 				} else if (strcmp(argv[i], "-fc") == 0) {
 					*fich = argv[i+1];
 
@@ -140,7 +154,7 @@ int llamadaC (int argc, char **argv, char **nombre, int *max, int *inv, int *tie
         case 1:			/*sin flags*/
             imprimirEC();
             return -1;
-        case 2:			/*-h*/
+        case 2:			/*-h ayuda*/
             if (strcmp(argv[1], "-h") == 0) {
                 imprimirHC();
             } else {
@@ -161,27 +175,27 @@ int llamadaC (int argc, char **argv, char **nombre, int *max, int *inv, int *tie
                     continue;
                 }
 
-                /*Si consigue -n*/
+                /*Si consigue -n nombre*/
                 if (strcmp(argv[i], "-n") == 0) {
                     *nombre = argv[i+1];
 
-                    /*Si consigue -cp*/
+                    /*Si consigue -cp capacidad maxima*/
                 } else if (strcmp(argv[i], "-cp") == 0) {
                     *max = atoi(argv[i+1]);
 
-                    /*Si consigue -i*/
+                    /*Si consigue -i inventario*/
                 } else if (strcmp(argv[i], "-i") == 0) {
                     *inv = atoi(argv[i+1]);
 
-                    /*Si consigue -t*/
+                    /*Si consigue -t tiempo de respuesta*/
                 } else if (strcmp(argv[i], "-t") == 0) {
                     *tiempo = atoi(argv[i+1]);
 
-                    /*Si consigue -c*/
+                    /*Si consigue -s suministro*/
                 } else if (strcmp(argv[i], "-s") == 0) {
                     *sum = atoi(argv[i+1]);
 
-                    /*Si consigue -fc*/
+                    /*Si consigue -p puerto del servidor*/
                 } else if (strcmp(argv[i], "-p") == 0) {
                     *puerto = atoi(argv[i+1]);
 
