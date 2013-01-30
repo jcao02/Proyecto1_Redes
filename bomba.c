@@ -4,6 +4,7 @@
 #include <semaphore.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <strings.h>
 #include "queue.h"
 #include "errores.h"
@@ -46,7 +47,7 @@ printf("tipo: '%c' | puerto: '%d' | DNS: '%s'\n", tipo,puerto,DNS);
 	/*Inicializacion de la estructura 'Cdir'*/
 	bzero(&Cdir, sizeof(Cdir));
 	Cdir.sin_family = AF_INET;
-	Cdir.sin_addr.s_addr = inet_addr(DNS);
+	Cdir.sin_addr = *((struct in_addr *) gethostbyname(DNS)->h_addr);
 	Cdir.sin_port = htons(puerto);
 
 	/*Conecto con el servidor*/
