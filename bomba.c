@@ -46,9 +46,9 @@ printf("tipo: '%c' | puerto: '%d' | DNS: '%s'\n", tipo,puerto,DNS);
 	/*Inicializacion de la estructura 'Cdir'*/
 	bzero(&Cdir, sizeof(Cdir));
 	Cdir.sin_family = AF_INET;
-	Cdir.sin_addr.s_addr = inet_addr(DNS);
+	Cdir.sin_addr = *((struct in_addr *) gethostbyname(DNS)->h_addr);
 	Cdir.sin_port = htons(puerto);
-
+printf("CONECTARE\n");
 	/*Conecto con el servidor*/
 	if (connect(fd,(struct sockaddr *) &Cdir, sizeof(Cdir)) < 0) {
 
@@ -57,7 +57,7 @@ printf("tipo: '%c' | puerto: '%d' | DNS: '%s'\n", tipo,puerto,DNS);
 		//errorSocket();
 		return -1;
 	}
-
+printf("EXITO\n");
 	/*Enviamos peticion de gasolina*/
 	if (write(fd, &tipo, 1) != 1) {
 

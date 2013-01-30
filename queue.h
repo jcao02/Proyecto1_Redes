@@ -12,8 +12,6 @@ distr get(queue q);
 
 void clear_queue(queue *q);
 
-void print_queue(queue q);
-
 iterator create_iterator(queue q);
 
 distr next_it(iterator it);

@@ -152,8 +152,7 @@ int add(queue *q, distr e) {
 
 		}
 	}
-printf("COLAAAAAAAA:\n");
-print_queue(*q);
+
 	++((*q)->size);
 }
 
@@ -184,27 +183,6 @@ print_queue(*q);
 	--(q->size);
 
 	return e;
-}
-
-void print_queue(queue q) {
-
-	/*iterator it;
-	distr c;
-	
-	it = create_iterator(q);
-	c = next_it(it);
-
-	while (c != NULL) {
-
-		printf("N: '%s' D: '%s' P: ' %d' T: '%d'\n", c->nombre, c->DNS, c->puerto, c->pr);
-		c = next_it(it);
-	}*/
-
-	box *b;
-
-	for (b = q->first; b != NULL; b = b->next) {
-		printf("N: '%s' D: '%s' P: ' %d' T: '%d'\n", b->elem->nombre, b->elem->DNS, b->elem->puerto, b->elem->pr);
-	}
 }
 
 /*
