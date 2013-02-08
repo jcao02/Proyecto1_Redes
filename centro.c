@@ -10,7 +10,7 @@
 #include "errores.h"
 #define QLENGTH 5
 
-char *nombre = NULL;	/*Nombre de la bomba*/
+char *nombre = NULL;    /*Nombre de la bomba*/
 int gas      = 0;       /*Cantidad de gasolina actual*/
 int max      = 0;       /*Cantidad maxima de gasolina*/
 int entrada  = 0;       /*Cantidad de gasolina que entra en litros por minuto*/
@@ -178,9 +178,9 @@ int main(int argc, char **argv) {
     sem_init(&semf,0,1);
 
     /*procedimiento que obtiene los valores generales*/
-	if (llamadaC(argc, argv, &nombre, &max, &gas, &resp, &entrada, &puerto) < 0) {
-		return -1;
-	}
+    if (llamadaC(argc, argv, &nombre, &max, &gas, &resp, &entrada, &puerto) < 0) {
+        return -1;
+    }
 
     /*Arma el nombre del archivo de log*/
     strcat(flog, nombre);
@@ -267,7 +267,7 @@ int main(int argc, char **argv) {
         }
     }
 
-	/*Cierro el archivo de log*/
+    /*Cierro el archivo de log*/
     fclose(out);
     /*Espero que atienda las peticiones restantes*/
     exit(0);

@@ -5,8 +5,8 @@
  */
 int errorMem(int line) {
 
-	printf("\nError en memoria.\nLinea: %d\n", line);
-	return -1;
+    printf("\nError en memoria.\nLinea: %d\n", line);
+    return -1;
 }
 
 /*
@@ -32,6 +32,6 @@ int errorSocket(int line) {
  */
 int errorFile(int line) {
 
-	printf("\nError en escritura/lectura de archivos.\nLinea: %d\n", line);
-	return -5;
+    printf("\nError en escritura/lectura de archivos.\nLinea: %d\n", line);
+    return -5;
 }

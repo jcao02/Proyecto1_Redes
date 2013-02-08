@@ -4,13 +4,13 @@
 #include "queue.h"
 
 struct box {
-	distr elem;
-	struct box *next, *prev;
+    distr elem;
+    struct box *next, *prev;
 };
 
 struct queue {
-	box *first, *last;
-	int size;
+    box *first, *last;
+    int size;
 };
 
 /**
@@ -19,18 +19,18 @@ struct queue {
  */
 queue create_queue() {
 
-	queue q;
+    queue q;
 
-	if ((q = (queue) malloc(sizeof(struct queue))) == NULL) {
-		errorMem(__LINE__);
-		return NULL;
-	}
+    if ((q = (queue) malloc(sizeof(struct queue))) == NULL) {
+        errorMem(__LINE__);
+        return NULL;
+    }
 
-	/*Inicializa atributos*/
-	q->first = NULL;
-	q->size = 0;
+    /*Inicializa atributos*/
+    q->first = NULL;
+    q->size = 0;
 
-	return q;
+    return q;
 }
 
 /**
@@ -38,28 +38,28 @@ queue create_queue() {
  * @param q Cola a liberarle la memoria.
  */
 void clear_queue(queue *q) {
-	
-	void *e;
+    
+    void *e;
 
-	/*Si pasaron una direccion vacia*/
-	if (q == NULL) {
-		return;
-	}
+    /*Si pasaron una direccion vacia*/
+    if (q == NULL) {
+        return;
+    }
 
-	/*Si la cola no esta inicializada*/
-	if (*q == NULL) {
-		return;
-	}
+    /*Si la cola no esta inicializada*/
+    if (*q == NULL) {
+        return;
+    }
 
-	/*Libera la memoria de todos los elementos*/
-	while (!is_empty(*q)) {
-		e = get(*q);
-		free (e);
-	}
+    /*Libera la memoria de todos los elementos*/
+    while (!is_empty(*q)) {
+        e = get(*q);
+        free (e);
+    }
 
-	free(*q);
+    free(*q);
 
-	*q = NULL;
+    *q = NULL;
 }
 
 /**
@@ -69,22 +69,22 @@ void clear_queue(queue *q) {
  */
 box *create_box(distr e) {
 
-	box *b;
+    box *b;
 
-	/*Pide memoria para la estructura box de la cola*/
-	if ((b = (box *) malloc(sizeof(box))) == NULL) {
-		errorMem(__LINE__);
-		/*Si no hay memoria, retorna false*/
-		return 0;
-	}
+    /*Pide memoria para la estructura box de la cola*/
+    if ((b = (box *) malloc(sizeof(box))) == NULL) {
+        errorMem(__LINE__);
+        /*Si no hay memoria, retorna false*/
+        return 0;
+    }
 
-	/*Asigna el elemento de la box*/
-	b->elem = e;
-	/*Inicializa apuntadores*/
-	b->next = NULL;
-	b->prev = NULL;
+    /*Asigna el elemento de la box*/
+    b->elem = e;
+    /*Inicializa apuntadores*/
+    b->next = NULL;
+    b->prev = NULL;
 
-	return b;
+    return b;
 }
 
 /**
@@ -94,11 +94,11 @@ box *create_box(distr e) {
  */
 int is_empty(queue q) {
 
-	if (q == NULL) {
-		return 1;
-	}
+    if (q == NULL) {
+        return 1;
+    }
 
-	return !q->size;
+    return !q->size;
 }
 
 /**
@@ -109,91 +109,91 @@ int is_empty(queue q) {
  */
 int add(queue *q, distr e) {
 
-	box *b, *aux;
+    box *b, *aux;
 
-	if (q == NULL) {
-		return 0;
-	}
+    if (q == NULL) {
+        return 0;
+    }
 
-	if (e == NULL) {
-		return 0;
-	}
+    if (e == NULL) {
+        return 0;
+    }
 
-	/*Si la cola no ha sido inicializada*/
-	if (*q == NULL) {
-		/*Creo la cola, si no la creo devuelvo false*/
-		if (!(*q = create_queue())) {
-			return 0;
-		}
-	}
+    /*Si la cola no ha sido inicializada*/
+    if (*q == NULL) {
+        /*Creo la cola, si no la creo devuelvo false*/
+        if (!(*q = create_queue())) {
+            return 0;
+        }
+    }
 
-	/*Creo la caja con el elemento, si no la creo devuelvo false*/
-	if (!(b = create_box(e))) {
-		return 0;
-	}
+    /*Creo la caja con el elemento, si no la creo devuelvo false*/
+    if (!(b = create_box(e))) {
+        return 0;
+    }
 
-	/*Si la cola esta vacia*/
-	if (is_empty(*q)) {
-		(*q)->first = b;
-		(*q)->last = b;
-	/*Si la cola tiene elementos*/
-	} else {
-		for (aux = (*q)->first; 
-			(aux != NULL) && (e->pr > aux->elem->pr); 
-				aux = aux->next);
+    /*Si la cola esta vacia*/
+    if (is_empty(*q)) {
+        (*q)->first = b;
+        (*q)->last = b;
+    /*Si la cola tiene elementos*/
+    } else {
+        for (aux = (*q)->first; 
+            (aux != NULL) && (e->pr > aux->elem->pr); 
+                aux = aux->next);
 
-		/*Si es el elemento de menor prioridad*/
-		if (aux == NULL) {
-			b->prev = (*q)->last;
-			(*q)->last->next = b;
-			(*q)->last = b;
-		/*Si es el elemento de mayor prioridad*/
-		} else if (aux == (*q)->first) {
-			b->next = aux;
-			aux->prev = b;
-			(*q)->first = b;
-		/*Si esta en el "medio"*/
-		} else {
-			b->prev = aux->prev;
-			b->next = aux;
-			aux->prev = b;
-			b->prev->next = b;
+        /*Si es el elemento de menor prioridad*/
+        if (aux == NULL) {
+            b->prev = (*q)->last;
+            (*q)->last->next = b;
+            (*q)->last = b;
+        /*Si es el elemento de mayor prioridad*/
+        } else if (aux == (*q)->first) {
+            b->next = aux;
+            aux->prev = b;
+            (*q)->first = b;
+        /*Si esta en el "medio"*/
+        } else {
+            b->prev = aux->prev;
+            b->next = aux;
+            aux->prev = b;
+            b->prev->next = b;
 
-		}
-	}
+        }
+    }
 
-	++((*q)->size);
+    ++((*q)->size);
 }
 
 /**
  * Obtiene el elemento de mayor prioridad.
  * @param  q Cola a desencolar el elemento.
  * @return   Elemento de mayor prioridad.
- */	
+ */    
  distr get(queue q) {
 
-	box *aux;
-	distr e;
+    box *aux;
+    distr e;
 
-	/*Si la cola esta vacia*/
-	if (is_empty(q)) {
-		return NULL;
-	}
+    /*Si la cola esta vacia*/
+    if (is_empty(q)) {
+        return NULL;
+    }
 
-	aux = q->first;
+    aux = q->first;
 
-	q->first = q->first->next;
+    q->first = q->first->next;
 
-	if (q->size > 1) {
-		q->first->prev = NULL;
-	}
+    if (q->size > 1) {
+        q->first->prev = NULL;
+    }
 
-	e = aux->elem;
-	free(aux);
+    e = aux->elem;
+    free(aux);
 
-	--(q->size);
+    --(q->size);
 
-	return e;
+    return e;
 }
 
 /**
@@ -203,20 +203,20 @@ int add(queue *q, distr e) {
  */
 iterator create_iterator(queue q) {
 
-	iterator it;
+    iterator it;
 
-	if (is_empty(q)) {
-		return NULL;
-	}
+    if (is_empty(q)) {
+        return NULL;
+    }
 
-	if ((it = (iterator) malloc(sizeof(box*))) == NULL) {
-		errorMem(__LINE__);
-		return NULL;
-	}
+    if ((it = (iterator) malloc(sizeof(box*))) == NULL) {
+        errorMem(__LINE__);
+        return NULL;
+    }
 
-	*it = q->first;
+    *it = q->first;
 
-	return it;
+    return it;
 }
 
 /**
@@ -226,18 +226,18 @@ iterator create_iterator(queue q) {
  */
 distr next_it(iterator it) {
 
-	distr e;
+    distr e;
 
-	/*Si el iterador llego al final o no ha sido inicializado*/
-	if ((it == NULL) || (*it == NULL)) {
-		return NULL;
-	}
+    /*Si el iterador llego al final o no ha sido inicializado*/
+    if ((it == NULL) || (*it == NULL)) {
+        return NULL;
+    }
 
-	e = (*it)->elem;
+    e = (*it)->elem;
 
-	*it = (*it)->next;
+    *it = (*it)->next;
 
-	return e;
+    return e;
 }
 
 /**
@@ -247,12 +247,12 @@ distr next_it(iterator it) {
  */
 distr prev_it(iterator it) {
 
-	/*si el iterador llego al principio o no ha sido inicializado*/
-	if ((it == NULL) || (*it == NULL)) {
-		return NULL;
-	}
+    /*si el iterador llego al principio o no ha sido inicializado*/
+    if ((it == NULL) || (*it == NULL)) {
+        return NULL;
+    }
 
-	*it = (*it)->prev;
+    *it = (*it)->prev;
 
-	return (*it)->prev->elem;
+    return (*it)->prev->elem;
 }
