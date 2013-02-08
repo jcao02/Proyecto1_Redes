@@ -5,41 +5,49 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <strings.h>
+#include <string.h>
 #include "extra.h"
 #include "errores.h"
-#define MINUTO 100000
 #define QLENGTH 5
-
 
 char *nombre = NULL;	/*Nombre de la bomba*/
 int gas      = 0;       /*Cantidad de gasolina actual*/
 int max      = 0;       /*Cantidad maxima de gasolina*/
 int entrada  = 0;       /*Cantidad de gasolina que entra en litros por minuto*/
-int tiempo   = 0;       /*Tiempo de respuesta del centro*/
+int resp     = 0;       /*Tiempo de respuesta del centro*/
+int tiempo   = 0;       /*Tiempo transcurrido desde que comenzo a operar el centro*/
 sem_t sem;              /*Semaforo para control de acceso a 'gas'*/
+sem_t semf;             /*Semaforo para control de escritura en el log*/
+FILE *out;              /*Arhcivo del log*/
 
 /*
- * Funcion que aumenta el inventario de gasolina del centro
+ * Funcion de hilo, aumenta el inventario de gasolina del centro
  */
 void *controlGas(){
 
     /*Ciclo infinito que recibe gasolina*/
-    while (1){
+    while (tiempo < LIMITE){
+
+        ++tiempo;
         /*Duerme por un minuto (0.1 seg)*/
         usleep(MINUTO);
-
-        printf("%d\n",gas);
 
         /*wait para accesar a 'gas'*/
         sem_wait(&sem);
 
-        /*Si hay menos espacio que la entrega por minuto*/
-        if (entrada + gas >= max){
-
-            gas = max;
-        } else{
+        /*Si hay espacio suficiente para la entrega llegando*/
+        if (entrada + gas < max){
 
             gas += entrada;
+        /*Si se acaba de llenar el tanque*/
+        } else if (gas < max) {
+
+            gas = max;
+
+            /*Escritura en log*/
+            sem_wait(&semf);
+            fprintf(out, "Tanque full: %d\n", tiempo);
+            sem_post(&semf);
         }
         
         /*signal para liberar 'gas'*/
@@ -47,122 +55,167 @@ void *controlGas(){
     }
     
     /*Termina el hilo*/
-    pthread_exit(NULL);
+    exit(0);
 }
 
-void *manejo_peticion(void *fd){
+/**
+ * Funcion de hilo, se manejan peticiones hechas al servidor.
+ * @param  file descriptor del socket.
+ */
+void *manejo_peticion(void *args){
 
-    int newfd = (int) fd;
-    char pet;
-    char *res;
+    int newfd =  *((int *) args);
+    char conex[256];
+    char *nomB;
+    char *pet;
+    char res[4];
 
-    if (read(newfd, &pet, 1) != 1) {
+    free(args);
+
+    if (read(newfd, conex, 256) < 4) {
         
-        errorFile();
+        close(newfd);
+        errorFile(__LINE__);
         pthread_exit(NULL);
     }
 
-    printf("\n\n-------------------------------------- '%c'\n\n", pet);
+    /*Obtenemos el nombre de la bomba*/
+    nomB = strtok(conex, "&");
+
+    /*Obtenemos la peticion*/
+    pet = strtok(NULL, "&");
 
     /*Si es una peticion de tiempo de respuesta*/
-    if (pet == 't' || pet == 'T') {
+    if ((strcmp(pet, "t") == 0) || (strcmp(pet, "T") == 0)) {
 
-        /*Memoria para el string de respuesta*/
-        if ((res = (char *) calloc(4, sizeof(char))) == NULL) {
-
-            errorMem();
-            pthread_exit(NULL);
-        }
-
-        sprintf(res, "%d", tiempo);
+        sprintf(res, "%d", resp);
 
         /*Escribe el tiempo de respuesta al cliente*/
         if (write(newfd, res, 4) < 1) {
 
-            free(res);
-            errorFile();
+            close(newfd);
+            errorFile(__LINE__);
             pthread_exit(NULL);
         }
 
         pthread_exit(NULL);
     }
 
-    if (pet != 'g' && pet != 'G') {
+    /*Si es una peticion de gasolina*/
+    if ((strcmp(pet, "g") == 0) || (strcmp(pet, "G") == 0)) {
 
-        pthread_exit(NULL);
-    }
+        /*wait para accesar a 'gas'*/
+        sem_wait(&sem);
 
-    /*wait para accesar a 'gas'*/
-    sem_wait(&sem);
+        /*Si tengo suficiente gasolina*/
+        if (gas >= CARGA){
 
-    /*Si tengo suficiente gasolina*/
-    if (gas >= CARGA){
+            sprintf(res, "1");
 
-        pet = '1';
+            /*Escribe que SI enviara la gasolina al cliente*/
+            if (write(newfd, res, 2) < 1) {
 
-        /*Escribe que SI enviara la gasolina al cliente*/
-        if (write(newfd, &pet, 1) != 1) {
+                close(newfd);
+                errorFile(__LINE__);
+                pthread_exit(NULL);
+            }
 
-            errorFile();
-            pthread_exit(NULL);
+            gas -= CARGA;
+
+            /*Escritura en log*/
+            sem_wait(&semf);
+            
+            fprintf(out, "Suministro: %d, %s, Positiva, %d\n", tiempo, nomB, gas);
+            
+            /*Si se vacio el tanque*/
+            if (gas == 0) {
+
+                fprintf(out, "Tanque vacio: %d\n", tiempo);
+            }
+
+            sem_post(&semf);
+
+        /*Si no hay suficiente gasolina*/
+        } else { 
+
+            sprintf(res, "0");
+
+            /*Escribe que NO enviara la gasolina al cliente*/
+            if (write(newfd, res, 2) < 1) {
+
+                close(newfd);
+                errorFile(__LINE__);
+                pthread_exit(NULL);
+            }
+
+            /*Escritura en log*/
+            sem_wait(&semf);
+            fprintf(out, "Suministro: %d, %s, Negativa, %d\n", tiempo, nomB, gas);
+            sem_post(&semf);
         }
 
-        gas -= CARGA;
-        printf("HILO\n");
-
-        // Escribir en el log
-    /*Si no hay suficiente gasolina*/
-    } else { 
-
-        pet = '0';
-
-        /*Escribe que NO enviara la gasolina al cliente*/
-        if (write(newfd, &pet, 1) != 1) {
-
-            errorFile();
-            pthread_exit(NULL);
-        }
-
-        // Escribir en el log
+        sem_post(&sem);
     }
 
-    sem_post(&sem);
+    close(newfd);
 
     pthread_exit(NULL);
 }
 
 int main(int argc, char **argv) {
+
     pthread_t controlador;              /*Hilo que controla la entrada de gasolina al centro*/
     pthread_t mensajero;                /*Hilo que responde a las llamadas de las bombas*/
     int puerto;                         /*Puerto a utilizar por el servidor*/
     int fd, newfd;                      /*File descriptor del socket y del socket que recibe la conexion*/
     struct sockaddr_in Bdir, Cdir;      /*Estructuras para los sockets*/
     socklen_t Btam;                     /*Tamaño del 'Bdir'*/
-    
+    int *thrArg;                        /*Estructura para el paso de argumentos al hilo*/
+    char flog[50] = "log_";             /*Nombre del archivo de log*/
+
     /*Inicializacion semaforo en 1*/
     sem_init(&sem,0,1);
+    sem_init(&semf,0,1);
 
     /*procedimiento que obtiene los valores generales*/
-	if (llamadaC(argc, argv, &nombre, &max, &gas, &tiempo, &entrada, &puerto) < 0) {
+	if (llamadaC(argc, argv, &nombre, &max, &gas, &resp, &entrada, &puerto) < 0) {
 		return -1;
 	}
 
-    printf("Nombre: %s\nCapacidad: %d\nInventario: %d\nTiempo: %d\nSuministro: %d\nPuerto: %d\n",
-            nombre, max, gas, tiempo, entrada, puerto);
+    /*Arma el nombre del archivo de log*/
+    strcat(flog, nombre);
+    strcat(flog, ".txt");
+    /*Abre el archivo de log*/
+    if ((out = fopen(flog, "w")) == NULL) {
 
-    
+        return errorFile(__LINE__);
+    }
+
+    fprintf(out, "Estado inicial: %d\n", gas);
+
+    /*Si comenzo vacio el tanque*/
+    if (gas == 0) {
+
+        fprintf(out, "Tanque vacio: %d\n", tiempo);
+    }
+
+    /*Si comenzo lleno el tanque*/
+    if (gas == max) {
+
+        fprintf(out, "Tanque full: %d\n", tiempo);
+    }
+
     /*Creo hilo que controla entrada de gasolina*/
     if (pthread_create(&controlador, NULL, controlGas, NULL) != 0){
 
-        return errorHilo();
+        return errorHilo(__LINE__);
     }
 
     /*El servidor se monta para recibir conexiones*/
-
     /*Abriendo socket con protocolo TCP*/
     if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
         
-        return errorSocket();
+        return errorSocket(__LINE__);
     }
 
     /*Inicializacion de la estructura 'Bdir' para el bind*/
@@ -171,43 +224,51 @@ int main(int argc, char **argv) {
     Cdir.sin_addr.s_addr = htonl(INADDR_ANY); 
     Cdir.sin_port = htons(puerto);
 
-    /*Nombramos al socket con bind*/
+    /*Nombra al socket con bind*/
     if (bind(fd, (struct sockaddr *) &Cdir, sizeof(Cdir)) != 0){
             
-        return errorSocket();
+        return errorSocket(__LINE__);
     }
 
+    /*El servidor es abierto a conexiones*/
     if (listen(fd, QLENGTH) < 0){
 
-        return errorSocket();
+        return errorSocket(__LINE__);
     }
 
     /*Ciclo para recibir conexiones*/
-    while (1){
+    while (tiempo < LIMITE){
 
         Btam = sizeof(Bdir);
         /*Se aceptan conexiones con el cliente*/
-
-        printf("----------------------\n");
-
         if ((newfd = accept(fd, (struct sockaddr *) &Bdir, &Btam)) < 0){
 
-            return errorSocket(); 
+            return errorSocket(__LINE__); 
         }
 
-        /*peticion */
-        if (pthread_create(&mensajero, NULL, manejo_peticion, (void *) newfd) != 0){
+        /*Pido memoria para pasar argumento del hilo*/
+        if ((thrArg = (int *) malloc(sizeof(int))) == NULL) {
 
-            return errorHilo();
+            return errorMem(__LINE__);
         }
 
-        /*Recuperar*/
+        *thrArg = newfd;
+
+        /*Hilo para manejar la peticion entrante*/
+        if (pthread_create(&mensajero, NULL, manejo_peticion, (void *) thrArg) != 0){
+
+            return errorHilo(__LINE__);
+        }
+
+        /*Para que el sistema recupere los recursos al terminar de ejecutar el hilo*/
         if (pthread_detach(mensajero) != 0){
             
-            return errorHilo();
+            return errorHilo(__LINE__);
         }
     }
 
-
-	return 0;
+	/*Cierro el archivo de log*/
+    fclose(out);
+    /*Espero que atienda las peticiones restantes*/
+    exit(0);
 }

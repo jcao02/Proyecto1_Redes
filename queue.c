@@ -13,15 +13,16 @@ struct queue {
 	int size;
 };
 
-/*
- *
+/**
+ * Crea una cola de prioridad nueva.
+ * @return la cola nueva si se creo
  */
 queue create_queue() {
 
 	queue q;
 
 	if ((q = (queue) malloc(sizeof(struct queue))) == NULL) {
-		errorMem();
+		errorMem(__LINE__);
 		return NULL;
 	}
 
@@ -32,8 +33,9 @@ queue create_queue() {
 	return q;
 }
 
-/*
- *
+/**
+ * Libera la memoria de la cola de prioridad.
+ * @param q Cola a liberarle la memoria.
  */
 void clear_queue(queue *q) {
 	
@@ -60,8 +62,10 @@ void clear_queue(queue *q) {
 	*q = NULL;
 }
 
-/*
- *
+/**
+ * Crea una caja con el elemento e adentro.
+ * @param  e Elemento a metern en la caja
+ * @return   La caja creada
  */
 box *create_box(distr e) {
 
@@ -69,7 +73,7 @@ box *create_box(distr e) {
 
 	/*Pide memoria para la estructura box de la cola*/
 	if ((b = (box *) malloc(sizeof(box))) == NULL) {
-		errorMem();
+		errorMem(__LINE__);
 		/*Si no hay memoria, retorna false*/
 		return 0;
 	}
@@ -83,8 +87,10 @@ box *create_box(distr e) {
 	return b;
 }
 
-/*
- *
+/**
+ * Indica si la cola esta vacia.
+ * @param  q Cola a evaluar.
+ * @return   Devuelve un valor indicando si al cola esta vacia.
  */
 int is_empty(queue q) {
 
@@ -95,8 +101,11 @@ int is_empty(queue q) {
 	return !q->size;
 }
 
-/*
- *
+/**
+ * Agrega el elemento e a la cola q
+ * @param  q Cola a la cual se le agregara el elemento.
+ * @param  e Elemento a agregar en la cola.
+ * @return   Devuelve un valor indicando si se agrego correctamente.
  */
 int add(queue *q, distr e) {
 
@@ -156,9 +165,11 @@ int add(queue *q, distr e) {
 	++((*q)->size);
 }
 
-/*
- *
- */
+/**
+ * Obtiene el elemento de mayor prioridad.
+ * @param  q Cola a desencolar el elemento.
+ * @return   Elemento de mayor prioridad.
+ */	
  distr get(queue q) {
 
 	box *aux;
@@ -185,8 +196,10 @@ int add(queue *q, distr e) {
 	return e;
 }
 
-/*
- *
+/**
+ * Crea un iterador sobre la cola dada
+ * @param  q Cola de prioridad
+ * @return   Iterador de la cola de prioridad q
  */
 iterator create_iterator(queue q) {
 
@@ -197,7 +210,7 @@ iterator create_iterator(queue q) {
 	}
 
 	if ((it = (iterator) malloc(sizeof(box*))) == NULL) {
-		errorMem();
+		errorMem(__LINE__);
 		return NULL;
 	}
 
@@ -206,6 +219,11 @@ iterator create_iterator(queue q) {
 	return it;
 }
 
+/**
+ * Obtiene el siguiente elemento de la iteracion.
+ * @param  it Iterador
+ * @return    Devuelve el elemento siguiente.
+ */
 distr next_it(iterator it) {
 
 	distr e;
@@ -222,6 +240,11 @@ distr next_it(iterator it) {
 	return e;
 }
 
+/**
+ * Obtiene el elemento anterior de la iteracion.
+ * @param  it Iterador
+ * @return    Devuelve el elemento anterior.
+ */
 distr prev_it(iterator it) {
 
 	/*si el iterador llego al principio o no ha sido inicializado*/

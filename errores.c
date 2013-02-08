@@ -1,25 +1,37 @@
 #include <stdio.h>
 
-int errorMem() {
+/*
+ * Indica error en memoria de llamada al sistema.
+ */
+int errorMem(int line) {
 
-	printf("\nError en memoria.\n");
+	printf("\nError en memoria.\nLinea: %d\n", line);
 	return -1;
 }
 
-int errorHilo() {
+/*
+ * Indica error en hilo de llamada al sistema.
+ */
+int errorHilo(int line) {
 
-    printf("\nError en hilo.\n");
+    printf("\nError en hilo.\nLinea: %d\n", line);
     return -2;
 }
 
-int errorSocket() {
+/*
+ * Indica error en socket de llamada al sistema.
+ */
+int errorSocket(int line) {
 
-    printf("\nError en socket.\n");
+    printf("\nError en socket.\nLinea: %d\n", line);
     return -4;
 }
 
-int errorFile() {
+/*
+ * Indica error en archivo de llamada al sistema.
+ */
+int errorFile(int line) {
 
-	printf("\nError en escritura/lectura de archivos.\n");
+	printf("\nError en escritura/lectura de archivos.\nLinea: %d\n", line);
 	return -5;
 }

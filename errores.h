@@ -1,8 +1,9 @@
+#include <stdio.h>
 
-int errorMem();
+int errorMem(int line);
 
-int errorHilos();
+int errorHilo(int line);
 
-int errorSocket();
+int errorSocket(int line); 
 
-int errorFile();
+int errorFile(int line); 

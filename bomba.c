@@ -4,21 +4,32 @@
 #include <semaphore.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netdb.h>
 #include <strings.h>
 #include "queue.h"
 #include "errores.h"
-#define LIMITE 480
 
-char *nombre = NULL;	/*Nombre de la bomba*/
-int gas = 0;			/*Cantidad de gasolina actual*/
-int max = 0;			/*Capacidad maxima de la bomba*/
-int pet = 1;			/*Numero de peticiones a hacer*/
+char *nombre  = NULL;	/*Nombre de la bomba*/
+int tiempo    = 0;		/*Tiempo transcurrido*/
+int gas       = 0;		/*Cantidad de gasolina actual*/
+int max       = 0;		/*Capacidad maxima de la bomba*/
+int pet       = 1;		/*Numero de peticiones a hacer*/
 queue centros = NULL;	/*Cola de prioridad con los centros de distribuicion*/
 sem_t sem;				/*Semaforo para control de acceso a 'gas' y 'pet'*/
+sem_t semf;             /*Semaforo para control de escritura de archivo*/
+FILE *out;              /*Arhcivo del log*/
 
+/**
+ * Hace una conexion con el centro indicado y retorna su respuesta.
+ * @param  tipo   tipo de peticion.
+ * @param  puerto puerto por el cual conectarse con el servidor.
+ * @param  DNS    DNS del servidor.
+ * @return        Respuesta del servidor.
+ */
 int conectar_centro(char tipo, int puerto, char *DNS) {
 
-	char *respuesta;			/*Respuesta del servidor*/
+	char respuesta[4];			/*Respuesta del servidor*/
+	char peticion[256];			/*Mensaje que se enviara al serivdor*/
 	int fd;						/*File descriptor del socket*/
 	struct sockaddr_in Cdir;	/*Estructura para el socket del servidor (centro de distribucion)*/
 
@@ -28,18 +39,13 @@ int conectar_centro(char tipo, int puerto, char *DNS) {
 		/*Respuesta negativa*/
 		return -1;
 	}
-printf("tipo: '%c' | puerto: '%d' | DNS: '%s'\n", tipo,puerto,DNS);
-	if ((respuesta = (char *) malloc(4 * sizeof(char))) == NULL) {
 
-		errorMem();
-		return -1;
-	}
-
+	sprintf(peticion, "%s&%c", nombre, tipo);
+	printf("%s\n", peticion);
 	/*Abriendo socket con protocolo TCP*/
 	if ((fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 
-		free(respuesta);
-		errorSocket();
+		errorSocket(__LINE__);
 		return -1;
 	}
 
@@ -48,41 +54,42 @@ printf("tipo: '%c' | puerto: '%d' | DNS: '%s'\n", tipo,puerto,DNS);
 	Cdir.sin_family = AF_INET;
 	Cdir.sin_addr = *((struct in_addr *) gethostbyname(DNS)->h_addr);
 	Cdir.sin_port = htons(puerto);
-printf("CONECTARE\n");
+
 	/*Conecto con el servidor*/
 	if (connect(fd,(struct sockaddr *) &Cdir, sizeof(Cdir)) < 0) {
 
-		free(respuesta);
 		close(fd);
-		//errorSocket();
+		errorSocket(__LINE__);
 		return -1;
 	}
-printf("EXITO\n");
-	/*Enviamos peticion de gasolina*/
-	if (write(fd, &tipo, 1) != 1) {
 
-		free(respuesta);
+	/*Enviamos peticion al servidor*/
+	if (write(fd, peticion, 256) < 1) {
+
 		close(fd);
-		errorFile();
+		errorFile(__LINE__);
 		return -1;
 	}
 
 	/*Esperamos la respuesta*/
 	if (read(fd, respuesta, 4) < 1) {
 
-		free(respuesta);
 		close(fd);
-		errorFile();
+		errorFile(__LINE__);
 		return -1;
 	}
 
-	respuesta[3] = '\0';
-
+	/*Cierro el file descriptor*/
 	close(fd);
 
-	return  atoi(respuesta);
+	return atoi(respuesta);
 }
 
+/**
+ * Analiza el fichero pasado en la llamada del programa.
+ * @param  fich nombre del fichero.
+ * @return      Si se hizo correctamente, se retorna la espera minima, sino 0 (false) para indicar falla.
+ */
 int analizar_fichero(char *fich) {
 
 	FILE *fd = NULL;		/*File descriptor del fichero de centros*/
@@ -95,13 +102,13 @@ int analizar_fichero(char *fich) {
 
 	/*Abre el archivo*/
 	if ((fd = fopen(fich, "r")) == NULL) {
-		return errorFile();
+		return errorFile(__LINE__);
 	}
 
 	/*Lee el archivo hasta el final*/
 	while (fscanf(fd, "%s", buffer) != EOF) {
 
-		nombre = strtok(buffer, "&");
+		nom = strtok(buffer, "&");
 		DNS = strtok(NULL, "&");
 		puerto = atoi(strtok(NULL, "&"));
 
@@ -123,15 +130,18 @@ int analizar_fichero(char *fich) {
 
 		/*Si consegui un nuevo minimo tiempo de respuesta*/
 		if (respuesta < min_resp) {
+			
 			min_resp = respuesta;
 		}
 
-		if((cent = create_distr(nombre, DNS, puerto, respuesta)) == NULL) {
+		if((cent = create_distr(nom, DNS, puerto, respuesta)) == NULL) {
+			
 			return -1;
 		}
 
 		if (!add(&centros, cent)) {
-			return -1;
+
+			free(cent);
 		}
 	}
 
@@ -144,13 +154,14 @@ int analizar_fichero(char *fich) {
 	return min_resp;
 }
 
+/**
+ * Funcion de hilo, donde se hacen las peticiones de gasolina a los servidores.
+ */
 void *pedir_gas() {
 
 	int respuesta, envio;		/*Tiempo de respuesta del centro y si enviara la gasolina*/
 	iterator it = NULL;			/*Iterador sobre la cola de prioridad*/
 	distr cent;					/*Para el chequeo de la cola*/
-
-printf("--------------HILO\n");
 
 	/*Itera sobre todos los centros hasta conseguir uno disponible*/
 	for (cent = next_it(it = create_iterator(centros)); ; cent = next_it(it)) {
@@ -158,16 +169,29 @@ printf("--------------HILO\n");
 		/*Si ya reviso todos los elementos, volvemos a comenzar*/
 		if (cent == NULL) {
 
+			usleep(5 * MINUTO);
 			it = create_iterator(centros);
 			continue;
 		}
 
 		envio = conectar_centro('g', cent->puerto, cent->DNS);
 
-		/*Si el servidor responde positivamente*/
-		if (envio != -1 && envio != 0) {
+		/*Si logro una conexion*/
+		if (envio != -1) {
+			/*Si se enviara la gasolina*/
+			if (envio) {
 
-			break;
+				sem_wait(&semf);
+                fprintf(out, "Peticion: %d, %s, Positiva\n", tiempo, cent->nombre);
+                sem_post(&semf);
+                break;
+          	/*Si NO se enviara la gasolina*/
+			} else {
+
+				sem_wait(&semf);
+                fprintf(out, "Peticion: %d, %s, Negativa\n", tiempo, cent->nombre);
+                sem_post(&semf);	
+			}
 		}
 	}
 
@@ -181,7 +205,17 @@ printf("--------------HILO\n");
 	/*Agrega la carga del envio e indica que la peticion fue atendida*/
 	gas += CARGA;
 	--pet;
-printf("----------------LLEGO CARGA\n");
+
+	sem_wait(&semf);
+    fprintf(out, "Llegada de la gandola: %d, %d\n", tiempo, gas);
+
+    /*Si el tanque se lleno*/
+    if (gas == max) {
+
+        fprintf(out, "Tanque full: %d\n", tiempo);
+    }
+    sem_post(&semf);
+
 	/*Signal para liberar 'gas' y 'pet'*/
 	sem_post(&sem);
 
@@ -191,31 +225,54 @@ printf("----------------LLEGO CARGA\n");
 int main(int argc, char **argv) {
 
 	char *fich;					/*Nombre del fichero con lista de centros*/
-	int tiempo = 0;				/*Tiempo transcurrido*/
-	int salida = 0;				/*Consumo en litros por minuto de gasolina*/
-	int espera = MAX_INT;		/*Tiempo de espera minimo*/
+	int salida    = 0;			/*Consumo en litros por minuto de gasolina*/
+	int espera    = MAX_INT;	/*Tiempo de espera minimo*/
 	pthread_t mensajero; 		/*Hilo que hace peticiones de gasolina*/
-	
-	/*Inicializa el semaforo en 1*/
+	char flog[50] = "log_";     /*Nombre del archivo de log*/
+
+	/*Inicializa semaforos en 1*/
 	sem_init(&sem, 0, 1);
+    sem_init(&semf, 0, 1);
 
 	/*Si hubo error en la invocacion del porgrama*/
 	if (llamadaB(argc, argv, &nombre, &fich, &max, &gas, &salida) < 0) {
 		return -1;
 	}
 
-	printf("Nombre: '%s'\nFichero: '%s'\nCapacidad: '%d'\n",nombre, fich, max);
-	printf("Inicial: '%d'\nConsumo: '%d'\n", gas, salida);
+	/*Arma el nombre del archivo de log*/
+    strcat(flog, nombre);
+    strcat(flog, ".txt");
+
+    /*Abre el archivo de log*/
+    if ((out = fopen(flog, "w")) == NULL) {
+
+        return errorFile(__LINE__);
+    }
+
+    fprintf(out, "Estado inicial: %d\n", gas);
 
 	/*Revisa el fichero de centros, si hay error termina el programa.*/
 	if ((espera = analizar_fichero(fich)) < 0) {
 		return -3;
 	}
 
+	/*Si comenzo vacio el tanque*/
+	if (gas == 0) {
+
+    	fprintf(out, "Tanque vacio: %d\n", tiempo);
+	}
+
+	/*Si comenzo lleno el tanque*/
+	if (gas == max) {
+
+        fprintf(out, "Tanque full: %d\n", tiempo);
+	}
+
 	/*mientras no pasen las 8 horas*/
 	while (tiempo < LIMITE) {
 		
 		++tiempo;
+		/*Duerme por un minuto (0.1 seg)*/
 		usleep(MINUTO);
 
 		printf("%d\n", gas);
@@ -224,22 +281,28 @@ int main(int argc, char **argv) {
 		sem_wait(&sem);
 
 		/*Si no se ha acabado la gasolina*/
-		if (gas - salida >= 0) {
+		if (gas - salida > 0) {
+
 			gas -= salida;
 		/*Si se acabo la gasolina*/
-		} else {
+		} else if (gas > 0) {
+
 			gas = 0;
-		}
+
+            sem_wait(&semf);
+            fprintf(out, "Tanque vacio: %d\n", tiempo);
+            sem_post(&semf);
+        }
 
 		/*Si hay espacio suficiente en el inventario*/
-		while (max - (gas - (espera) * salida) >= CARGA * pet) {
+		while (max - (gas - espera * salida) >= CARGA * pet) {
 
 			/*Aumenta el numero de peticiones a hacer*/
 			++pet;
 			/*Crea un hilo que maneje la peticion*/
 			if (pthread_create(&mensajero, NULL, pedir_gas, NULL) != 0) {
 
-				errorHilo();
+				errorHilo(__LINE__);
 			}
 		}
 
